@@ -40,14 +40,16 @@ def read_portfolio_dict(filename):
     with open(filename, 'rt') as f:
         rows = csv.reader(f)
         headers = next(rows)
-        for row in rows:
+        for rowno, row in enumerate(rows, start=1):
+            record = dict(zip(headers, row))
             try:
-               holdings = {'name': row[0], 'shares': int(row[1]), 'price': float(row[2])} 
-               portfolio.append(holdings)
+               record['shares'] = int(record['shares'])
+               record['price'] = float(record['price'])
+               portfolio.append(record)
             except ValueError:
-                print(f"Invalid number for {row[0]}.\nShares: {row[1]}\nPrice: {row[2]}")
+                print(f'Row {rowno}: Bad row: {row}')
                 continue
-        
+
     return portfolio
 
 def read_prices(filename):
@@ -72,15 +74,29 @@ def compute_pf_value(portfolio):
         total_cost += stock['price'] * stock['shares']
     return total_cost
 
+def make_report(holdings, prices):
+    portfolio = []
+    for stock in holdings:
+        data = (stock['name'], stock['shares'], 
+                prices[stock['name']], 
+                prices[stock['name']] - stock['price'])
+        portfolio.append(data)
+
+    return portfolio
+
+def print_report(report):
+    headers = ('Name', 'Shares', 'Price', 'Change')
+    print('%10s %10s %10s %10s' % headers)
+    print(("-" * 10 + ' ') * len(headers))
+    for name, shares, price, change in report:
+        print(f'{name:>10s} {shares:>10d} {price:>10.2f} {change:>10.2f}')
+
+def portfolio_report(portfolio_filename, prices_filename):
+    portfolio = read_portfolio_dict(portfolio_filename)
+    prices = read_prices(prices_filename)
+    report = make_report(portfolio, prices)
+    print_report(report)
+
+portfolio_report(r'Work\Data\portfolio.csv', r'Work\Data\prices.csv')
 
 
-portfolio_dict = read_portfolio_dict(r'Work\Data\portfolio.csv')
-total_cost = compute_pf_value(portfolio_dict)
-
-prices = read_prices(r'Work\Data\prices.csv')
-
-current_pf_value = 0.0
-for stock in portfolio_dict:
-    current_pf_value += stock['shares'] * prices[stock['name']]
-
-print(f"Cost basis: {total_cost:.2f}\nCurrent portfolio value: {current_pf_value}\nTotal gain/loss: {current_pf_value - total_cost}")
