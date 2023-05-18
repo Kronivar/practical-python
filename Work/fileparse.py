@@ -5,10 +5,14 @@
 # fileparse.py
 import csv
 
-def parse_csv(filename, select=None, types=None, has_headers=True, delimiter=','):
+def parse_csv(filename, select=None, types=None, has_headers=True, delimiter=',', silence_errors=True):
     '''
     Parse a CSV file into a list of records
     '''
+
+    if not has_headers and select:
+        raise RuntimeError("Select argument requires column headers")
+
     with open(filename) as f:
         
         rows = csv.reader(f, delimiter=delimiter)
@@ -24,7 +28,9 @@ def parse_csv(filename, select=None, types=None, has_headers=True, delimiter=','
             headers = [headers[i] for i in indices]
 
         records = []
-        for row in rows:
+        for i, row in enumerate(rows, 1):
+            
+                
             if not row:    # Skip rows with no data
                 continue
             
@@ -32,18 +38,25 @@ def parse_csv(filename, select=None, types=None, has_headers=True, delimiter=','
                 row = [row[i] for i in indices]
             
             if types:
-                row = [func(x) for func, x in zip(types, row)]
-            
+                try:
+                    row = [func(x) for func, x in zip(types, row)]
+                except ValueError as e:
+                    if silence_errors:
+                        continue
+                    
+                    print(f"Row {i}: Couldn't convert {row}")
+                    print(f"Row {i}: Reason {e}")
+
             if headers:
                 record = dict(zip(headers, row))
             else:
-                record = tuple(row)
-            
+                record = tuple(row)        
             records.append(record)
 
     return records
 
 # portfolio = parse_csv(r'Work\Data\portfolio.csv', select=['name', 'price'], types=[str, float])
-portfolio = parse_csv(r'Work\Data\prices.csv', types=[str, float], has_headers=False)
+# portfolio = parse_csv(r'Work\Data\prices.csv', select=['name', 'price'], has_headers=False)
 # portfolio = parse_csv(r'Work\Data\portfolio.dat', types=[str, int, float], delimiter=' ')
+portfolio = parse_csv(r'Work\Data\missing.csv', types=[str, int, float])
 print(portfolio)
