@@ -9,7 +9,7 @@ def portfolio_cost(filename):
     
     portfolio = report.read_portfolio(filename)
 
-    total_cost = sum([s['shares'] * s['price'] for s in portfolio])
+    total_cost = sum([s.shares * s.price for s in portfolio])
     return total_cost
     
 def main(argv):
